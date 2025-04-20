@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      1.9
+    // @version      2.0
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -54,21 +54,22 @@
                     const hasParagraph = node.querySelector('p');
                     const isUser = hasSpan && !hasParagraph && !node.classList.contains('w-full');
                     if (isUser) {
+                        const currentCounter = messageCounter + 1;
                         messageCounter++;
-                        node.id = `user-message-${messageCounter}`;
+                        node.id = `user-message-${currentCounter}`;
                         node.classList.add('user-message-highlight');
                         const link = document.createElement('a');
-                        link.href = `#user-message-${messageCounter}`;
+                        link.href = `#user-message-${currentCounter}`;
                         const container = document.createElement('div');
                         container.className = 'marquee-container';
                         const marqueeText = document.createElement('span');
                         marqueeText.className = 'marquee-text';
-                        marqueeText.textContent = `${messageCounter}-${node.textContent.slice(0, 8)}`;
+                        marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 8)}`;
                         container.appendChild(marqueeText);
                         link.appendChild(container);
                         link.onclick = (e) => {e.preventDefault(); node.scrollIntoView({behavior:'smooth', block:'start'});};
-                        link.onmouseover = () => {marqueeText.textContent = `${messageCounter}-${node.textContent.slice(0, 256)}`;};
-                        link.onmouseout = () => {marqueeText.textContent = `${messageCounter}-${node.textContent.slice(0, 8)}`;};
+                        link.onmouseover = () => {marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 256)}`;};
+                        link.onmouseout = () => {marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 8)}`;};
                         sidebar.appendChild(link);
                     }
                     processed.add(node);
