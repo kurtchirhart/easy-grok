@@ -67,7 +67,14 @@
                         marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 8)}`;
                         container.appendChild(marqueeText);
                         link.appendChild(container);
-                        link.onclick = (e) => {e.preventDefault(); node.scrollIntoView({behavior:'smooth', block:'start'});};
+                        link.onclick = (e) => {
+                            e.preventDefault();
+                            const chatContainer = document.querySelector('div.w-full.h-full.overflow-y-auto');
+                            const rect = node.getBoundingClientRect();
+                            const containerRect = chatContainer.getBoundingClientRect();
+                            const topPosition = rect.top - containerRect.top + chatContainer.scrollTop;
+                            chatContainer.scrollTo({top:topPosition - 50, behavior:'smooth'});
+                        };
                         link.onmouseover = () => {marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 256)}`;};
                         link.onmouseout = () => {marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 8)}`;};
                         sidebar.appendChild(link);
