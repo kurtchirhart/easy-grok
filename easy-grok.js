@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.0
+    // @version      2.1
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -13,7 +13,12 @@
     (function() {
         'use strict';
 
+        // --- Debug Flag ---
+        // Enable (true) or disable (false) debug logging
+        var D = true;
+
         // --- Styles ---
+        // Defines CSS for highlighting messages, sidebar appearance, marquee effect, and hover area
         GM_addStyle(`
             .user-message-highlight {background-color:#ffeb3b !important;color:#000 !important;}
             .floating-sidebar {position:fixed;top:2.5vh;left:-15vw;width:10ch;height:95vh;background:#333;color:#fff;padding:10px;z-index:9999;overflow-y:auto;box-sizing:border-box;transition:left 0.3s;}
@@ -28,31 +33,51 @@
         `);
 
         // --- Sidebar Setup ---
+        // Initialize sidebar, processed messages set, and message counter
         const processed = new Set();
         let messageCounter = 0;
         const sidebar = document.createElement('div');
         sidebar.className = 'floating-sidebar';
         sidebar.innerHTML = '<h3>User Messages</h3>';
         document.body.appendChild(sidebar);
+        if (D) console.log('Sidebar initialized and appended to document body');
 
         // --- Hover Area Setup ---
+        // Create a hover area to trigger sidebar visibility
         const hoverArea = document.createElement('div');
         hoverArea.className = 'hover-area';
         document.body.appendChild(hoverArea);
+        if (D) console.log('Hover area created and appended to document body');
 
         // --- Event Listeners for Auto-Hide ---
-        hoverArea.addEventListener('mouseover', () => sidebar.classList.add('visible'));
-        sidebar.addEventListener('mouseover', () => sidebar.classList.add('visible'));
-        sidebar.addEventListener('mouseout', () => sidebar.classList.remove('visible'));
+        // Show sidebar on hover over hover area or sidebar, hide when mouse leaves sidebar
+        hoverArea.addEventListener('mouseover', () => {
+            sidebar.classList.add('visible');
+            if (D) console.log('Hover area mouseover: Sidebar made visible');
+        });
+        sidebar.addEventListener('mouseover', () => {
+            sidebar.classList.add('visible');
+            if (D) console.log('Sidebar mouseover: Sidebar kept visible');
+        });
+        sidebar.addEventListener('mouseout', () => {
+            sidebar.classList.remove('visible');
+            if (D) console.log('Sidebar mouseout: Sidebar hidden');
+        });
 
         // --- Message Highlighting and Sidebar Linking ---
+        // Process message-bubble divs, highlight user messages, and add links to sidebar
         const highlightUserBubbles = (nodes) => {
+            if (D) console.log('highlightUserBubbles called with nodes:', nodes.length);
+            const firstLink = sidebar.querySelector('a');
+            const firstMessageNode = firstLink ? document.querySelector(firstLink.href.split('#')[1] ? `#${firstLink.href.split('#')[1]}` : null) : null;
+            if (D) console.log('First link in sidebar:', firstLink, 'First message node:', firstMessageNode);
             nodes.forEach(node => {
                 if (node.nodeType !== 1 || processed.has(node)) return;
                 if (node.classList.contains('message-bubble')) {
                     const hasSpan = node.querySelector('span.whitespace-pre-wrap');
                     const hasParagraph = node.querySelector('p');
                     const isUser = hasSpan && !hasParagraph && !node.classList.contains('w-full');
+                    if (D) console.log('Processing node:', node, 'Is user message:', isUser);
                     if (isUser) {
                         const currentCounter = messageCounter + 1;
                         messageCounter++;
@@ -74,10 +99,23 @@
                             const containerRect = chatContainer.getBoundingClientRect();
                             const topPosition = rect.top - containerRect.top + chatContainer.scrollTop;
                             chatContainer.scrollTo({top:topPosition - 50, behavior:'smooth'});
+                            if (D) console.log(`Clicked link ${currentCounter}: Scrolling to topPosition ${topPosition - 50}`);
                         };
-                        link.onmouseover = () => {marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 256)}`;};
-                        link.onmouseout = () => {marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 8)}`;};
-                        sidebar.appendChild(link);
+                        link.onmouseover = () => {
+                            marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 256)}`;
+                            if (D) console.log(`Mouseover on link ${currentCounter}: Marquee text set to full`);
+                        };
+                        link.onmouseout = () => {
+                            marqueeText.textContent = `${currentCounter}-${node.textContent.slice(0, 8)}`;
+                            if (D) console.log(`Mouseout on link ${currentCounter}: Marquee text set to short`);
+                        };
+                        if (firstMessageNode && node.getBoundingClientRect().top < firstMessageNode.getBoundingClientRect().top) {
+                            sidebar.insertBefore(link, sidebar.querySelector('a'));
+                            if (D) console.log(`Prepending link ${currentCounter}: Node is above first message`);
+                        } else {
+                            sidebar.appendChild(link);
+                            if (D) console.log(`Appending link ${currentCounter}: Node is below first message or no first message`);
+                        }
                     }
                     processed.add(node);
                 }
@@ -85,13 +123,16 @@
         };
 
         // --- Chat Container Monitoring ---
+        // Wait for the chat container to appear, then monitor for new message-bubble divs
         const waitForChatContainer = () => {
+            if (D) console.log('Starting container observer to find chat container');
             const containerObserver = new MutationObserver((mutations, observer) => {
                 const chatContainer = document.querySelector('div.w-full.h-full.overflow-y-auto');
                 if (chatContainer) {
                     observer.disconnect();
+                    if (D) console.log('Chat container found, starting bubble observer');
                     const bubbleObserver = new MutationObserver(mutations => {
-                        console.log('Bubble MO fired at', new Date().toISOString(), 'Mutations:', mutations);
+                        if (D) console.log('Bubble MO fired at', new Date().toISOString(), 'Mutations:', mutations);
                         mutations.forEach(m => {
                             if (m.addedNodes.length > 0) {
                                 highlightUserBubbles(Array.from(m.addedNodes).filter(node => node.nodeType === 1 && node.classList.contains('message-bubble')));
