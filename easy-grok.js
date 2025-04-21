@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.1
+    // @version      2.2
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -79,12 +79,12 @@
                     const isUser = hasSpan && !hasParagraph && !node.classList.contains('w-full');
                     if (D) console.log('Processing node:', node, 'Is user message:', isUser);
                     if (isUser) {
-                        const currentCounter = messageCounter + 1;
+                        const currentCounter = firstMessageNode && node.getBoundingClientRect().top < firstMessageNode.getBoundingClientRect().top ? -(messageCounter + 1) : messageCounter + 1;
                         messageCounter++;
-                        node.id = `user-message-${currentCounter}`;
+                        node.id = `user-message-${Math.abs(currentCounter)}`;
                         node.classList.add('user-message-highlight');
                         const link = document.createElement('a');
-                        link.href = `#user-message-${currentCounter}`;
+                        link.href = `#user-message-${Math.abs(currentCounter)}`;
                         const container = document.createElement('div');
                         container.className = 'marquee-container';
                         const marqueeText = document.createElement('span');
