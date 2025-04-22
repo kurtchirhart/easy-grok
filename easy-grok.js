@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.9
+    // @version      2.10
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -19,8 +19,8 @@
         // Enable (true) or disable (false) debug logging
         var D = true;
 
-        // --- Styles ---
-        // Defines CSS for highlighting messages, sidebar appearance, marquee effect, and settings UI
+        // --- Color Variables ---
+        // Load color settings asynchronously before styling
         let userPromptBgColor = '#ffeb3b';
         let userPromptTextColor = '#000';
         let editTextColor = '#FFFFFF';
@@ -31,6 +31,9 @@
         } catch (e) {
             console.error('Failed to get color values:', e);
         }
+
+        // --- Styles ---
+        // Defines CSS for highlighting messages, sidebar appearance, marquee effect, and settings UI
         GM_addStyle(`
             .user-message-highlight {
                 background-color: ${userPromptBgColor} !important;
@@ -51,7 +54,7 @@
             .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
             .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:flex-start;gap:20px;}
             .settings-panel.visible {display:flex;}
-            .settings-panel .preview-area {padding:10px;border-radius:10px;background-color:${bgColor};}
+            .settings-panel .preview-area {padding:10px;border-radius:10px;background-color:${userPromptBgColor};}
             .settings-panel .title-label {color:#FF8000;font-weight:bold;font-size:16px;}
             .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;font-size:14px;}
             .settings-panel .color-controls {display:flex;flex-direction:column;gap:10px;}
