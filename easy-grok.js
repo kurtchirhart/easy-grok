@@ -49,13 +49,25 @@
             @keyframes marquee {0% {transform:translateX(0);} 100% {transform:translateX(-100%);}}
             .hover-area {position:fixed;top:0;left:0;width:5px;height:100vh;z-index:9998;}
             .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
-            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
-            .settings-panel.visible {display:block;}
+
+            .ssettings-panel {display:flex;flex-direction:row;gap:20px;position:fixed;top:10vh;left:20vw;background:#333;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+            .ssettings-panel.visible {display:flex;}
+
+            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#333;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);flex-direction:row;gap:20px;}
+            .settings-panel.visible {display:flex;}
+
+            .settings-panel .column {display:flex;flex-direction:column;gap:5px;}
+            .settings-panel .row {display:flex;flex-direction:row;gap:5px;}
+            
             .settings-panel .preview-area {padding:10px;border-radius:10px;margin-bottom:10px;}
             .settings-panel .title-label {color:#FF8000;font-weight:bold;font-size:16px;}
             .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;font-size:14px;}
             .settings-panel label {display:block;margin:5px 0;color:#FFFFFF;}
-            .settings-panel input[type="color"] {width:50px;height:50px;margin-left:10px;}
+            
+            input[type="color"]::-webkit-color-swatch { border: 2px; border-radius: 15px; }
+            input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+
+            .settings-panel input[type="color"] {width:40px;height:40px;margin-left:10px;}
             .settings-panel button {margin-top:10px;padding:5px 10px;background:#555;border:none;color:#fff;border-radius:5px;cursor:pointer;}
             .settings-panel button:hover {background:#666;}
         `);
@@ -67,7 +79,7 @@
         let negativeMessageCounter = -1;
         const sidebar = document.createElement('div');
         sidebar.className = 'floating-sidebar';
-        sidebar.innerHTML = '<h3>User Messages</h3>';
+        sidebar.innerHTML = '<h3>Prompts</h3>';
         document.body.appendChild(sidebar);
         if (D) console.log('Sidebar initialized and appended to document body');
 
@@ -75,7 +87,7 @@
         // Add gear icon to toggle settings panel
         const gearIcon = document.createElement('div');
         gearIcon.className = 'gear-icon';
-        gearIcon.textContent = '⚙️ Settings';
+        gearIcon.textContent = '⚙️';
         sidebar.insertBefore(gearIcon, sidebar.querySelector('h3').nextSibling);
         if (D) console.log('Gear icon added to sidebar');
 
@@ -87,19 +99,22 @@
         const textColor = await GM.getValue('userPromptTextColor', '#000');
         const editColor = await GM.getValue('editTextColor', '#FFFFFF');
         settingsPanel.innerHTML = `
-            <div class="preview-area" style="background-color:${bgColor};">
-                <span class="title-label" style="color:${textColor};">Text Color</span>
-                <br>
-                <span class="subtitle-label" style="color:${editColor};">Edit Text Color</span>
+        <div class="column">
+            <div class="row">
+                <div class="preview-area" style="background-color:${bgColor};">
+                    <span class="title-label" style="color:${textColor};">Text Color</span>
+                    <br>
+                    <span class="subtitle-label" style="color:${editColor};">Edit Text Color</span>
+                </div>
+                <div class="column">
+                    <input type="color" id="bgColorPicker" value="${bgColor}">
+                    <input type="color" id="textColorPicker" value="${textColor}">
+                    <input type="color" id="editTextColorPicker" value="${editColor}">
+                </div>
             </div>
-            <label>Background:</label>
-            <input type="color" id="bgColorPicker" value="${bgColor}">
-            <label>Main Text:</label>
-            <input type="color" id="textColorPicker" value="${textColor}">
-            <label>Edit Text:</label>
-            <input type="color" id="editTextColorPicker" value="${editColor}">
             <button id="saveSettings">Save</button>
             <button id="closeSettings">Close</button>
+        </div>
         `;
         document.body.appendChild(settingsPanel);
         if (D) console.log('Settings panel created and appended to document body');
