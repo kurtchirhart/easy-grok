@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.8
+    // @version      2.9
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -49,13 +49,16 @@
             @keyframes marquee {0% {transform:translateX(0);} 100% {transform:translateX(-100%);}}
             .hover-area {position:fixed;top:0;left:0;width:5px;height:100vh;z-index:9998;}
             .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
-            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
-            .settings-panel.visible {display:block;}
-            .settings-panel .preview-area {padding:10px;border-radius:10px;margin-bottom:10px;}
+            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:flex-start;gap:20px;}
+            .settings-panel.visible {display:flex;}
+            .settings-panel .preview-area {padding:10px;border-radius:10px;background-color:${bgColor};}
             .settings-panel .title-label {color:#FF8000;font-weight:bold;font-size:16px;}
             .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;font-size:14px;}
-            .settings-panel label {display:block;margin:5px 0;color:#FFFFFF;}
-            .settings-panel input[type="color"] {width:50px;height:50px;margin-left:10px;}
+            .settings-panel .color-controls {display:flex;flex-direction:column;gap:10px;}
+            .settings-panel label {margin:0;color:#FFFFFF;}
+            .settings-panel input[type="color"] {width:50px;height:50px;cursor:pointer;}
+            .settings-panel .color-picker-container {position:absolute;top:10vh;left:calc(20vw + 300px);display:none;background:#00FF00;padding:5px;border-radius:5px;}
+            .settings-panel .color-picker-container.visible {display:block;}
             .settings-panel button {margin-top:10px;padding:5px 10px;background:#555;border:none;color:#fff;border-radius:5px;cursor:pointer;}
             .settings-panel button:hover {background:#666;}
         `);
@@ -87,19 +90,24 @@
         const textColor = await GM.getValue('userPromptTextColor', '#000');
         const editColor = await GM.getValue('editTextColor', '#FFFFFF');
         settingsPanel.innerHTML = `
-            <div class="preview-area" style="background-color:${bgColor};">
+            <div class="preview-area">
                 <span class="title-label" style="color:${textColor};">Text Color</span>
                 <br>
                 <span class="subtitle-label" style="color:${editColor};">Edit Text Color</span>
             </div>
-            <label>Background:</label>
-            <input type="color" id="bgColorPicker" value="${bgColor}">
-            <label>Main Text:</label>
-            <input type="color" id="textColorPicker" value="${textColor}">
-            <label>Edit Text:</label>
-            <input type="color" id="editTextColorPicker" value="${editColor}">
-            <button id="saveSettings">Save</button>
-            <button id="closeSettings">Close</button>
+            <div class="color-controls">
+                <label>Background:</label>
+                <input type="color" id="bgColorPicker" value="${bgColor}">
+                <label>Main Text:</label>
+                <input type="color" id="textColorPicker" value="${textColor}">
+                <label>Edit Text:</label>
+                <input type="color" id="editTextColorPicker" value="${editColor}">
+                <button id="saveSettings">Save</button>
+                <button id="closeSettings">Close</button>
+            </div>
+            <div class="color-picker-container" id="colorPickerContainer">
+                <input type="color" id="activeColorPicker">
+            </div>
         `;
         document.body.appendChild(settingsPanel);
         if (D) console.log('Settings panel created and appended to document body');
@@ -114,17 +122,31 @@
         const previewArea = settingsPanel.querySelector('.preview-area');
         const titleLabel = settingsPanel.querySelector('.title-label');
         const subtitleLabel = settingsPanel.querySelector('.subtitle-label');
+        const colorPickerContainer = document.getElementById('colorPickerContainer');
+        const activeColorPicker = document.getElementById('activeColorPicker');
 
-        document.getElementById('bgColorPicker').addEventListener('input', (e) => {
-            previewArea.style.backgroundColor = e.target.value;
+        const showColorPicker = (pickerId, targetInput) => {
+            colorPickerContainer.classList.add('visible');
+            activeColorPicker.value = targetInput.value;
+            activeColorPicker.oninput = (e) => {
+                targetInput.value = e.target.value;
+                if (pickerId === 'bgColorPicker') previewArea.style.backgroundColor = e.target.value;
+                if (pickerId === 'textColorPicker') titleLabel.style.color = e.target.value;
+                if (pickerId === 'editTextColorPicker') subtitleLabel.style.color = e.target.value;
+            };
+            activeColorPicker.focus();
+        };
+
+        document.getElementById('bgColorPicker').addEventListener('click', (e) => {
+            showColorPicker('bgColorPicker', e.target);
         });
 
-        document.getElementById('textColorPicker').addEventListener('input', (e) => {
-            titleLabel.style.color = e.target.value;
+        document.getElementById('textColorPicker').addEventListener('click', (e) => {
+            showColorPicker('textColorPicker', e.target);
         });
 
-        document.getElementById('editTextColorPicker').addEventListener('input', (e) => {
-            subtitleLabel.style.color = e.target.value;
+        document.getElementById('editTextColorPicker').addEventListener('click', (e) => {
+            showColorPicker('editTextColorPicker', e.target);
         });
 
         document.getElementById('saveSettings').addEventListener('click', async () => {
@@ -144,6 +166,7 @@
 
         document.getElementById('closeSettings').addEventListener('click', () => {
             settingsPanel.classList.remove('visible');
+            colorPickerContainer.classList.remove('visible');
             if (D) console.log('Settings panel closed');
         });
 
