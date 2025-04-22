@@ -129,6 +129,48 @@
         document.body.appendChild(settingsPanel);
         if (D) console.log('Settings panel created and appended to document body');
 
+
+        const save = async () => {
+            const bgColor = document.getElementById('bgColorPicker').value;
+            const textColor = document.getElementById('textColorPicker').value;
+            const editTextColor = document.getElementById('editTextColorPicker').value;
+            try {
+                await GM.setValue('userPromptBgColor', bgColor);
+                await GM.setValue('userPromptTextColor', textColor);
+                await GM.setValue('editTextColor', editTextColor);
+                dynamicStyle.innerHTML = `
+                    .user-message-highlight {
+                        background-color: ${bgColor} !important;
+                        color: ${textColor} !important;
+                    }
+                    textarea.w-screen.max-w-\\[100\\%\\].bg-transparent.focus\\:outline-none.text-primary {
+                        color: ${editTextColor} !important;
+                    }
+                    .settings-panel .preview-area {
+                        background-color: ${bgColor};
+                    }
+                `;
+                if (D) console.log('Settings saved: Background:', bgColor, 'Text:', textColor, 'Edit Text:', editTextColor);
+            } catch (e) {
+                console.error('Failed to save settings:', e);
+            }
+        };
+        
+        document.getElementById('saveSettings').addEventListener('click', async () => {
+            await save();
+        });
+        
+        document.addEventListener('click', async (e) => {
+            if (!settingsPanel.contains(e.target) && !gearIcon.contains(e.target) && settingsPanel.classList.contains('visible')) {
+                await save();
+                settingsPanel.classList.remove('visible');
+                colorPickerContainer.classList.remove('visible');
+                settingsPanel.style.display = 'none';
+                if (D) console.log('Settings panel closed, display:', settingsPanel.style.display);
+            }
+        });
+
+
         // --- Settings Panel Event Listeners ---
         // Toggle settings panel visibility, handle save/close, and update preview dynamically
         gearIcon.addEventListener('click', () => {
@@ -152,32 +194,7 @@
             subtitleLabel.style.color = e.target.value;
         });
 
-        document.getElementById('saveSettings').addEventListener('click', async () => {
-            const bgColor = document.getElementById('bgColorPicker').value;
-            const textColor = document.getElementById('textColorPicker').value;
-            const editTextColor = document.getElementById('editTextColorPicker').value;
-            try {
-                await GM.setValue('userPromptBgColor', bgColor);
-                await GM.setValue('userPromptTextColor', textColor);
-                await GM.setValue('editTextColor', editTextColor);
-                // Update the dynamic styles without reloading
-                dynamicStyle.innerHTML = `
-                .user-message-highlight {
-                    background-color: ${bgColor} !important;
-                    color: ${textColor} !important;
-                }
-                textarea.w-screen.max-w-\\[100\\%\\].bg-transparent.focus\\:outline-none.text-primary {
-                    color: ${editTextColor} !important;
-                }
-                .settings-panel .preview-area {
-                    background-color: ${bgColor};
-                }
-                `;
-                if (D) console.log('Settings saved and styles updated: Background:', bgColor, 'Text:', textColor, 'Edit Text:', editTextColor);
-            } catch (e) {
-                console.error('Failed to save settings:', e);
-            }
-        });
+        document.getElementById('saveSettings').addEventListener('click', save);
 
         document.getElementById('closeSettings').addEventListener('click', () => {
             settingsPanel.classList.remove('visible');
