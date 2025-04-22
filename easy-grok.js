@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.10
+    // @version      2.11
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -52,13 +52,13 @@
             @keyframes marquee {0% {transform:translateX(0);} 100% {transform:translateX(-100%);}}
             .hover-area {position:fixed;top:0;left:0;width:5px;height:100vh;z-index:9998;}
             .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
-            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:flex-start;gap:20px;}
+            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#FFFFFF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);display:flex;align-items:flex-start;gap:20px;}
             .settings-panel.visible {display:flex;}
             .settings-panel .preview-area {padding:10px;border-radius:10px;background-color:${userPromptBgColor};}
             .settings-panel .title-label {color:#FF8000;font-weight:bold;font-size:16px;}
             .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;font-size:14px;}
-            .settings-panel .color-controls {display:flex;flex-direction:column;gap:10px;}
-            .settings-panel label {margin:0;color:#FFFFFF;}
+            .settings-panel form {display:flex;flex-direction:column;gap:10px;}
+            .settings-panel label {margin:0;color:#000000;}
             .settings-panel input[type="color"] {width:50px;height:50px;cursor:pointer;}
             .settings-panel .color-picker-container {position:absolute;top:10vh;left:calc(20vw + 300px);display:none;background:#00FF00;padding:5px;border-radius:5px;}
             .settings-panel .color-picker-container.visible {display:block;}
@@ -89,6 +89,7 @@
         // Create a floating settings panel with color pickers and preview
         const settingsPanel = document.createElement('div');
         settingsPanel.className = 'settings-panel';
+        settingsPanel.classList.remove('visible'); // Ensure panel starts closed
         const bgColor = await GM.getValue('userPromptBgColor', '#ffeb3b');
         const textColor = await GM.getValue('userPromptTextColor', '#000');
         const editColor = await GM.getValue('editTextColor', '#FFFFFF');
@@ -98,7 +99,7 @@
                 <br>
                 <span class="subtitle-label" style="color:${editColor};">Edit Text Color</span>
             </div>
-            <div class="color-controls">
+            <form>
                 <label>Background:</label>
                 <input type="color" id="bgColorPicker" value="${bgColor}">
                 <label>Main Text:</label>
@@ -107,7 +108,7 @@
                 <input type="color" id="editTextColorPicker" value="${editColor}">
                 <button id="saveSettings">Save</button>
                 <button id="closeSettings">Close</button>
-            </div>
+            </form>
             <div class="color-picker-container" id="colorPickerContainer">
                 <input type="color" id="activeColorPicker">
             </div>
