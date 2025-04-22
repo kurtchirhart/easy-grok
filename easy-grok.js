@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.6
+    // @version      2.7
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -23,9 +23,11 @@
         // Defines CSS for highlighting messages, sidebar appearance, marquee effect, and settings UI
         let userPromptBgColor = '#ffeb3b';
         let userPromptTextColor = '#000';
+        let editTextColor = '#FFFFFF';
         try {
             userPromptBgColor = await GM.getValue('userPromptBgColor', '#ffeb3b');
             userPromptTextColor = await GM.getValue('userPromptTextColor', '#000');
+            editTextColor = await GM.getValue('editTextColor', '#FFFFFF');
         } catch (e) {
             console.error('Failed to get color values:', e);
         }
@@ -33,6 +35,9 @@
             .user-message-highlight {
                 background-color: ${userPromptBgColor} !important;
                 color: ${userPromptTextColor} !important;
+            }
+            textarea.w-screen.max-w-\\[100\\%\\].bg-transparent.focus\\:outline-none.text-primary {
+                color: ${editTextColor} !important;
             }
             .floating-sidebar {position:fixed;top:2.5vh;left:-15vw;width:10ch;height:95vh;background:#333;color:#fff;padding:10px;z-index:9999;overflow-y:auto;box-sizing:border-box;transition:left 0.3s;}
             .floating-sidebar.visible {left:0;}
@@ -44,9 +49,11 @@
             @keyframes marquee {0% {transform:translateX(0);} 100% {transform:translateX(-100%);}}
             .hover-area {position:fixed;top:0;left:0;width:5px;height:100vh;z-index:9998;}
             .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
-            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#444;color:#fff;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;color:#fff;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
             .settings-panel.visible {display:block;}
             .settings-panel label {display:block;margin:10px 0 5px;}
+            .settings-panel .title-label {color:#FF8000;font-weight:bold;}
+            .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;}
             .settings-panel input[type="color"] {width:100px;}
             .settings-panel button {margin-top:10px;padding:5px 10px;background:#555;border:none;color:#fff;border-radius:5px;cursor:pointer;}
             .settings-panel button:hover {background:#666;}
@@ -77,11 +84,16 @@
         settingsPanel.className = 'settings-panel';
         const bgColor = await GM.getValue('userPromptBgColor', '#ffeb3b');
         const textColor = await GM.getValue('userPromptTextColor', '#000');
+        const editColor = await GM.getValue('editTextColor', '#FFFFFF');
         settingsPanel.innerHTML = `
+            <label class="title-label">Text Color</label>
+            <label class="subtitle-label">Edit Text Color</label>
             <label>Background Color:</label>
             <input type="color" id="bgColorPicker" value="${bgColor}">
-            <label>Text Color:</label>
+            <label>Main Text Color:</label>
             <input type="color" id="textColorPicker" value="${textColor}">
+            <label>Edit Text Color:</label>
+            <input type="color" id="editTextColorPicker" value="${editColor}">
             <button id="saveSettings">Save</button>
             <button id="closeSettings">Close</button>
         `;
@@ -98,11 +110,13 @@
         document.getElementById('saveSettings').addEventListener('click', async () => {
             const bgColor = document.getElementById('bgColorPicker').value;
             const textColor = document.getElementById('textColorPicker').value;
+            const editTextColor = document.getElementById('editTextColorPicker').value;
             try {
                 await GM.setValue('userPromptBgColor', bgColor);
                 await GM.setValue('userPromptTextColor', textColor);
+                await GM.setValue('editTextColor', editTextColor);
                 window.location.reload(); // Reload to apply new styles
-                if (D) console.log('Settings saved: Background:', bgColor, 'Text:', textColor);
+                if (D) console.log('Settings saved: Background:', bgColor, 'Text:', textColor, 'Edit Text:', editTextColor);
             } catch (e) {
                 console.error('Failed to save settings:', e);
             }
