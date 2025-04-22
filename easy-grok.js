@@ -1,11 +1,13 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.2
+    // @version      2.3
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
     // @grant        GM_addStyle
+    // @grant        GM_getValue
+    // @grant        GM_setValue
     // @updateURL    https://raw.githubusercontent.com/kurtchirhart/easy-grok/master/easy_grok.js
     // @downloadURL  https://raw.githubusercontent.com/kurtchirhart/easy-grok/master/easy_grok.js
     // ==/UserScript==
@@ -18,9 +20,12 @@
         var D = true;
 
         // --- Styles ---
-        // Defines CSS for highlighting messages, sidebar appearance, marquee effect, and hover area
+        // Defines CSS for highlighting messages, sidebar appearance, marquee effect, hover area, and settings UI
         GM_addStyle(`
-            .user-message-highlight {background-color:#ffeb3b !important;color:#000 !important;}
+            .user-message-highlight {
+                background-color: ${GM_getValue('userPromptBgColor', '#ffeb3b')} !important;
+                color: ${GM_getValue('userPromptTextColor', '#000')} !important;
+            }
             .floating-sidebar {position:fixed;top:2.5vh;left:-15vw;width:10ch;height:95vh;background:#333;color:#fff;padding:10px;z-index:9999;overflow-y:auto;box-sizing:border-box;transition:left 0.3s;}
             .floating-sidebar.visible {left:0;}
             .floating-sidebar h3 {margin:0 0 10px;font-size:14px;}
@@ -30,17 +35,69 @@
             .marquee-text {display:inline-block;}
             @keyframes marquee {0% {transform:translateX(0);} 100% {transform:translateX(-100%);}}
             .hover-area {position:fixed;top:0;left:0;width:5px;height:100vh;z-index:9998;}
+            .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
+            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#444;color:#fff;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+            .settings-panel.visible {display:block;}
+            .settings-panel label {display:block;margin:10px 0 5px;}
+            .settings-panel input[type="color"] {width:100px;}
+            .settings-panel button {margin-top:10px;padding:5px 10px;background:#555;border:none;color:#fff;border-radius:5px;cursor:pointer;}
+            .settings-panel button:hover {background:#666;}
         `);
 
         // --- Sidebar Setup ---
         // Initialize sidebar, processed messages set, and message counter
         const processed = new Set();
         let messageCounter = 0;
+        let negativeMessageCounter = -1;
         const sidebar = document.createElement('div');
         sidebar.className = 'floating-sidebar';
         sidebar.innerHTML = '<h3>User Messages</h3>';
         document.body.appendChild(sidebar);
         if (D) console.log('Sidebar initialized and appended to document body');
+
+        // --- Gear Icon Setup ---
+        // Add gear icon to toggle settings panel
+        const gearIcon = document.createElement('div');
+        gearIcon.className = 'gear-icon';
+        gearIcon.textContent = '⚙️ Settings';
+        sidebar.insertBefore(gearIcon, sidebar.querySelector('h3').nextSibling);
+        if (D) console.log('Gear icon added to sidebar');
+
+        // --- Settings Panel Setup ---
+        // Create a floating settings panel with color pickers
+        const settingsPanel = document.createElement('div');
+        settingsPanel.className = 'settings-panel';
+        settingsPanel.innerHTML = `
+            <label>Background Color:</label>
+            <input type="color" id="bgColorPicker" value="${GM_getValue('userPromptBgColor', '#ffeb3b')}">
+            <label>Text Color:</label>
+            <input type="color" id="textColorPicker" value="${GM_getValue('userPromptTextColor', '#000')}">
+            <button id="saveSettings">Save</button>
+            <button id="closeSettings">Close</button>
+        `;
+        document.body.appendChild(settingsPanel);
+        if (D) console.log('Settings panel created and appended to document body');
+
+        // --- Settings Panel Event Listeners ---
+        // Toggle settings panel visibility and handle save/close actions
+        gearIcon.addEventListener('click', () => {
+            settingsPanel.classList.toggle('visible');
+            if (D) console.log('Settings panel toggled:', settingsPanel.classList.contains('visible'));
+        });
+
+        document.getElementById('saveSettings').addEventListener('click', () => {
+            const bgColor = document.getElementById('bgColorPicker').value;
+            const textColor = document.getElementById('textColorPicker').value;
+            GM_setValue('userPromptBgColor', bgColor);
+            GM_setValue('userPromptTextColor', textColor);
+            window.location.reload(); // Reload to apply new styles
+            if (D) console.log('Settings saved: Background:', bgColor, 'Text:', textColor);
+        });
+
+        document.getElementById('closeSettings').addEventListener('click', () => {
+            settingsPanel.classList.remove('visible');
+            if (D) console.log('Settings panel closed');
+        });
 
         // --- Hover Area Setup ---
         // Create a hover area to trigger sidebar visibility
@@ -79,8 +136,8 @@
                     const isUser = hasSpan && !hasParagraph && !node.classList.contains('w-full');
                     if (D) console.log('Processing node:', node, 'Is user message:', isUser);
                     if (isUser) {
-                        const currentCounter = firstMessageNode && node.getBoundingClientRect().top < firstMessageNode.getBoundingClientRect().top ? -(messageCounter + 1) : messageCounter + 1;
-                        messageCounter++;
+                        const currentCounter = firstMessageNode && node.getBoundingClientRect().top < firstMessageNode.getBoundingClientRect().top ? negativeMessageCounter-- : messageCounter + 1;
+                        if (currentCounter > 0) messageCounter++;
                         node.id = `user-message-${Math.abs(currentCounter)}`;
                         node.classList.add('user-message-highlight');
                         const link = document.createElement('a');
