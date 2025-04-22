@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.11
+    // @version      2.12
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -168,11 +168,17 @@
             }
         });
 
-        document.getElementById('closeSettings').addEventListener('click', () => {
-            settingsPanel.classList.remove('visible');
-            colorPickerContainer.classList.remove('visible');
-            if (D) console.log('Settings panel closed');
-        });
+        const closeSettingsButton = document.getElementById('closeSettings');
+        if (closeSettingsButton) {
+            closeSettingsButton.addEventListener('click', () => {
+                settingsPanel.classList.remove('visible');
+                colorPickerContainer.classList.remove('visible');
+                settingsPanel.style.display = 'none'; // Explicitly hide
+                if (D) console.log('Settings panel closed, display:', settingsPanel.style.display);
+            });
+        } else {
+            if (D) console.log('Error: closeSettings button not found');
+        }
 
         // --- Hover Area Setup ---
         // Create a hover area to trigger sidebar visibility
