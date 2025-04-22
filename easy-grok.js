@@ -1,7 +1,7 @@
 // ==UserScript==
     // @name         Highlight User Message Bubble with Marquee Sidebar on Grok.com
     // @namespace    http://tampermonkey.net/
-    // @version      2.7
+    // @version      2.8
     // @description  Highlights user message-bubble divs with a marquee sidebar on grok.com
     // @author       You
     // @match        https://grok.com/*
@@ -49,12 +49,13 @@
             @keyframes marquee {0% {transform:translateX(0);} 100% {transform:translateX(-100%);}}
             .hover-area {position:fixed;top:0;left:0;width:5px;height:100vh;z-index:9998;}
             .gear-icon {cursor:pointer;color:#fff;font-size:14px;margin-bottom:10px;}
-            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;color:#fff;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
+            .settings-panel {display:none;position:fixed;top:10vh;left:20vw;background:#0000FF;padding:20px;border-radius:20px;z-index:10000;box-shadow:0 0 10px rgba(0,0,0,0.5);}
             .settings-panel.visible {display:block;}
-            .settings-panel label {display:block;margin:10px 0 5px;}
-            .settings-panel .title-label {color:#FF8000;font-weight:bold;}
-            .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;}
-            .settings-panel input[type="color"] {width:100px;}
+            .settings-panel .preview-area {padding:10px;border-radius:10px;margin-bottom:10px;}
+            .settings-panel .title-label {color:#FF8000;font-weight:bold;font-size:16px;}
+            .settings-panel .subtitle-label {color:#FFFFFF;font-weight:bold;font-size:14px;}
+            .settings-panel label {display:block;margin:5px 0;color:#FFFFFF;}
+            .settings-panel input[type="color"] {width:50px;height:50px;margin-left:10px;}
             .settings-panel button {margin-top:10px;padding:5px 10px;background:#555;border:none;color:#fff;border-radius:5px;cursor:pointer;}
             .settings-panel button:hover {background:#666;}
         `);
@@ -79,20 +80,23 @@
         if (D) console.log('Gear icon added to sidebar');
 
         // --- Settings Panel Setup ---
-        // Create a floating settings panel with color pickers
+        // Create a floating settings panel with color pickers and preview
         const settingsPanel = document.createElement('div');
         settingsPanel.className = 'settings-panel';
         const bgColor = await GM.getValue('userPromptBgColor', '#ffeb3b');
         const textColor = await GM.getValue('userPromptTextColor', '#000');
         const editColor = await GM.getValue('editTextColor', '#FFFFFF');
         settingsPanel.innerHTML = `
-            <label class="title-label">Text Color</label>
-            <label class="subtitle-label">Edit Text Color</label>
-            <label>Background Color:</label>
+            <div class="preview-area" style="background-color:${bgColor};">
+                <span class="title-label" style="color:${textColor};">Text Color</span>
+                <br>
+                <span class="subtitle-label" style="color:${editColor};">Edit Text Color</span>
+            </div>
+            <label>Background:</label>
             <input type="color" id="bgColorPicker" value="${bgColor}">
-            <label>Main Text Color:</label>
+            <label>Main Text:</label>
             <input type="color" id="textColorPicker" value="${textColor}">
-            <label>Edit Text Color:</label>
+            <label>Edit Text:</label>
             <input type="color" id="editTextColorPicker" value="${editColor}">
             <button id="saveSettings">Save</button>
             <button id="closeSettings">Close</button>
@@ -101,10 +105,26 @@
         if (D) console.log('Settings panel created and appended to document body');
 
         // --- Settings Panel Event Listeners ---
-        // Toggle settings panel visibility and handle save/close actions
+        // Toggle settings panel visibility, handle save/close, and update preview dynamically
         gearIcon.addEventListener('click', () => {
             settingsPanel.classList.toggle('visible');
             if (D) console.log('Settings panel toggled:', settingsPanel.classList.contains('visible'));
+        });
+
+        const previewArea = settingsPanel.querySelector('.preview-area');
+        const titleLabel = settingsPanel.querySelector('.title-label');
+        const subtitleLabel = settingsPanel.querySelector('.subtitle-label');
+
+        document.getElementById('bgColorPicker').addEventListener('input', (e) => {
+            previewArea.style.backgroundColor = e.target.value;
+        });
+
+        document.getElementById('textColorPicker').addEventListener('input', (e) => {
+            titleLabel.style.color = e.target.value;
+        });
+
+        document.getElementById('editTextColorPicker').addEventListener('input', (e) => {
+            subtitleLabel.style.color = e.target.value;
         });
 
         document.getElementById('saveSettings').addEventListener('click', async () => {
