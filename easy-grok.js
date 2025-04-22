@@ -32,13 +32,7 @@
             console.error('Failed to get color values:', e);
         }
         GM_addStyle(`
-            .user-message-highlight {
-                background-color: ${userPromptBgColor} !important;
-                color: ${userPromptTextColor} !important;
-            }
-            textarea.w-screen.max-w-\\[100\\%\\].bg-transparent.focus\\:outline-none.text-primary {
-                color: ${editTextColor} !important;
-            }
+        
             .floating-sidebar {position:fixed;top:2.5vh;left:-15vw;width:10ch;height:95vh;background:#333;color:#fff;padding:10px;z-index:9999;overflow-y:auto;box-sizing:border-box;transition:left 0.3s;}
             .floating-sidebar.visible {left:0;}
             .floating-sidebar h3 {margin:0 0 10px;font-size:14px;}
@@ -71,6 +65,22 @@
             .settings-panel button {margin-top:10px;padding:5px 10px;background:#555;border:none;color:#fff;border-radius:5px;cursor:pointer;}
             .settings-panel button:hover {background:#666;}
         `);
+
+        const dynamicStyle = document.createElement('style');
+        dynamicStyle.id = 'dynamic-colors';
+        dynamicStyle.innerHTML = `
+            .user-message-highlight {
+                background-color: ${userPromptBgColor} !important;
+                color: ${userPromptTextColor} !important;
+            }
+            textarea.w-screen.max-w-\\[100\\%\\].bg-transparent.focus\\:outline-none.text-primary {
+                color: ${editTextColor} !important;
+            }
+            .settings-panel .preview-area {
+                background-color: ${userPromptBgColor};
+            }
+        `;
+        document.head.appendChild(dynamicStyle);
 
         // --- Sidebar Setup ---
         // Initialize sidebar, processed messages set, and message counter
@@ -150,8 +160,20 @@
                 await GM.setValue('userPromptBgColor', bgColor);
                 await GM.setValue('userPromptTextColor', textColor);
                 await GM.setValue('editTextColor', editTextColor);
-                window.location.reload(); // Reload to apply new styles
-                if (D) console.log('Settings saved: Background:', bgColor, 'Text:', textColor, 'Edit Text:', editTextColor);
+                // Update the dynamic styles without reloading
+                dynamicStyle.innerHTML = `
+                .user-message-highlight {
+                    background-color: ${bgColor} !important;
+                    color: ${textColor} !important;
+                }
+                textarea.w-screen.max-w-\\[100\\%\\].bg-transparent.focus\\:outline-none.text-primary {
+                    color: ${editTextColor} !important;
+                }
+                .settings-panel .preview-area {
+                    background-color: ${bgColor};
+                }
+                `;
+                if (D) console.log('Settings saved and styles updated: Background:', bgColor, 'Text:', textColor, 'Edit Text:', editTextColor);
             } catch (e) {
                 console.error('Failed to save settings:', e);
             }
